@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(to bottom, #4EC0CA 0%, #44A08D 100%);
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-container {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 50%, #87CEEB 100%);
+            border: 4px solid #fff;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .bird {
+            position: absolute;
+            width: 34px;
+            height: 24px;
+            right: 80px;
+            background: #FFD700;
+            border-radius: 50% 60% 50% 60%;
+            transition: none;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            z-index: 10;
+        }
+
+        .bird::before {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 8px;
+            background: #FF8C00;
+            right: -8px;
+            top: 8px;
+            border-radius: 0 50% 50% 0;
+        }
+
+        .bird::after {
+            content: '';
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #000;
+            top: 6px;
+            right: 8px;
+            border-radius: 50%;
+        }
+
+        .bird.flap {
+            animation: flap 0.3s ease-out;
+        }
+
+        @keyframes flap {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(-20deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        .pipe {
+            position: absolute;
+            width: 60px;
+            background: linear-gradient(to right, #228B22, #32CD32, #228B22);
+            border: 2px solid #006400;
+            animation: movePipe 4s linear infinite; /* This animation is overridden by JS */
+        }
+
+        .pipe-top {
+            top: 0;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .pipe-bottom {
+            bottom: 0;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .pipe::before {
+            content: '';
+            position: absolute;
+            width: 70px;
+            height: 30px;
+            background: linear-gradient(to right, #228B22, #32CD32, #228B22);
+            border: 2px solid #006400;
+            left: -7px;
+        }
+
+        .pipe-top::before {
+            bottom: -2px;
+            border-radius: 0 0 15px 15px;
+        }
+
+        .pipe-bottom::before {
+            top: -2px;
+            border-radius: 15px 15px 0 0;
+        }
+
+        /* @keyframes movePipe is removed as movement is handled by JS */
+
+        .ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 80px;
+            background: linear-gradient(to bottom, #DEB887 0%, #8B7355 100%);
+            border-top: 3px solid #CD853F;
+            z-index: 10; /* Ensure ground is above pipes */
+        }
+
+        .ground::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 20px;
+            background: repeating-linear-gradient(
+                90deg,
+                #90EE90 0px,
+                #90EE90 10px,
+                #32CD32 10px,
+                #32CD32 20px
+            );
+            top: -20px;
+        }
+
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50px;
+            animation: moveClouds 20s linear infinite;
+        }
+
+        .cloud:before {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50px;
+        }
+
+        .cloud:after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50px;
+        }
+
+        .cloud1 {
+            width: 40px;
+            height: 20px;
+            top: 80px;
+            left: -50px;
+        }
+
+        .cloud1:before {
+            width: 25px;
+            height: 25px;
+            top: -10px;
+            left: 8px;
+        }
+
+        .cloud1:after {
+            width: 30px;
+            height: 20px;
+            top: -5px;
+            left: 20px;
+        }
+
+        .cloud2 {
+            width: 35px;
+            height: 18px;
+            top: 120px;
+            left: -40px;
+            animation-delay: -10s;
+        }
+
+        .cloud2:before {
+            width: 20px;
+            height: 20px;
+            top: -8px;
+            left: 10px;
+        }
+
+        @keyframes moveClouds {
+            from { transform: translateX(0); }
+            to { transform: translateX(450px); }
+        }
+
+        .ui {
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+            text-shadow: 3px 3px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
+            z-index: 20;
+        }
+
+        .start-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 30;
+        }
+
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 30;
+        }
+
+        button {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            color: #333;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .audio-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 25;
+        }
+
+        .mute-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            text-align: center;
+            font-size: 14px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+
+        .medal {
+            display: inline-block;
+            margin: 10px;
+            font-size: 24px;
+        }
+
+        .score-display {
+            background: rgba(255,255,255,0.9);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container" id="gameContainer">
+        <div class="cloud cloud1"></div>
+        <div class="cloud cloud2"></div>
+        
+        <div class="bird" id="bird"></div>
+        
+        <div class="ground"></div>
+        
+        <div class="ui">
+            <span id="score">0</span>
+        </div>
+        
+        <div class="audio-controls">
+            <button class="mute-btn" id="muteBtn">🔊</button>
+        </div>
+        
+        <div class="start-screen" id="startScreen">
+            <h2>🐦 Flappy Bird</h2>
+            <p>Nhấn SPACE hoặc Click để bay!</p>
+            <p>Bay qua các ống nước để ghi điểm</p>
+            <button onclick="startGame()">Bắt Đầu Bay</button>
+        </div>
+        
+        <div class="game-over" id="gameOver">
+            <h2>🎯 Game Over!</h2>
+            <div class="score-display">
+                <div>Điểm: <span id="finalScore">0</span></div>
+                <div>Cao nhất: <span id="highScore">0</span></div>
+            </div>
+            <div id="medal"></div>
+            <button onclick="restartGame()">Bay Lại</button>
+        </div>
+        
+        <div class="instructions" id="instructions">
+            Nhấn SPACE hoặc Click để bay lên!
+        </div>
+    </div>
+
+    <script>
+        class AudioManager {
+            constructor() {
+                this.context = null;
+                this.isMuted = false;
+                this.init();
+            }
+
+            async init() {
+                try {
+                    this.context = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.log('Audio not supported in this browser:', e);
+                }
+            }
+
+            async playTone(frequency, duration, type = 'sine', volume = 0.1) {
+                if (!this.context || this.isMuted) return;
+                
+                // Resume audio context if it's suspended (e.g., after user interaction)
+                if (this.context.state === 'suspended') {
+                    await this.context.resume();
+                }
+
+                const oscillator = this.context.createOscillator();
+                const gainNode = this.context.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.context.destination);
+                
+                oscillator.frequency.setValueAtTime(frequency, this.context.currentTime);
+                oscillator.type = type;
+                
+                gainNode.gain.setValueAtTime(volume, this.context.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + duration);
+                
+                oscillator.start(this.context.currentTime);
+                oscillator.stop(this.context.currentTime + duration);
+            }
+
+            playFlap() {
+                this.playTone(220, 0.1, 'square', 0.05);
+            }
+
+            playScore() {
+                this.playTone(523, 0.1, 'sine', 0.1);
+                setTimeout(() => this.playTone(659, 0.1, 'sine', 0.1), 100);
+            }
+
+            playHit() {
+                this.playTone(150, 0.5, 'sawtooth', 0.1);
+            }
+
+            playDie() {
+                const startFreq = 400;
+                const endFreq = 100;
+                const duration = 0.8;
+                
+                if (!this.context || this.isMuted) return;
+                
+                // Resume audio context if it's suspended
+                if (this.context.state === 'suspended') {
+                    this.context.resume();
+                }
+
+                const oscillator = this.context.createOscillator();
+                const gainNode = this.context.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.context.destination);
+                
+                oscillator.frequency.setValueAtTime(startFreq, this.context.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(endFreq, this.context.currentTime + duration);
+                oscillator.type = 'sawtooth';
+                
+                gainNode.gain.setValueAtTime(0.1, this.context.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + duration);
+                
+                oscillator.start(this.context.currentTime);
+                oscillator.stop(this.context.currentTime + duration);
+            }
+
+            toggle() {
+                this.isMuted = !this.isMuted;
+                if (this.context) {
+                    if (this.isMuted) {
+                        this.context.suspend();
+                    } else {
+                        this.context.resume();
+                    }
+                }
+                return this.isMuted;
+            }
+        }
+
+        class FlappyBird {
+            constructor() {
+                this.bird = document.getElementById('bird');
+                this.gameContainer = document.getElementById('gameContainer');
+                this.scoreEl = document.getElementById('score');
+                this.gameOverEl = document.getElementById('gameOver');
+                this.startScreenEl = document.getElementById('startScreen');
+                this.instructionsEl = document.getElementById('instructions');
+                this.finalScoreEl = document.getElementById('finalScore');
+                this.highScoreEl = document.getElementById('highScore');
+                this.medalEl = document.getElementById('medal');
+                
+                this.audio = new AudioManager();
+                this.isPlaying = false;
+                this.birdY = 300;
+                this.birdVelocity = 0;
+                this.gravity = 0.15 ; // Reduced gravity for slower fall
+                this.flapPower = -5; // Reduced flap power for slower jumps
+                this.score = 0;
+                this.pipes = [];
+                this.gameSpeed = 1.5; // Reduced game speed
+                this.pipeGap = 160; // Slightly increased gap for easier play
+                this.pipeSpawnInterval = 120; // Increased interval for pipes to spawn less frequently (frames)
+                this.animationFrameId = null; // To store the requestAnimationFrame ID
+
+                this.loadHighScore();
+                this.setupEventListeners();
+                this.showStartScreen(); // Ensure start screen is visible initially
+            }
+
+            setupEventListeners() {
+                document.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space') {
+                        e.preventDefault();
+                        this.flap();
+                    }
+                });
+
+                this.gameContainer.addEventListener('click', (e) => {
+                    if (e.target.tagName !== 'BUTTON' && this.isPlaying) {
+                        this.flap();
+                    } else if (!this.isPlaying && e.target.tagName !== 'BUTTON' && this.startScreenEl.style.display === 'block') {
+                         this.startGame(); // Allow starting game by clicking anywhere on container if start screen is active
+                    }
+                });
+
+                document.getElementById('muteBtn').addEventListener('click', () => {
+                    const isMuted = this.audio.toggle();
+                    document.getElementById('muteBtn').textContent = isMuted ? '🔇' : '🔊';
+                });
+            }
+
+            flap() {
+                if (!this.isPlaying) return;
+                
+                this.birdVelocity = this.flapPower;
+                // Add and remove 'flap' class for animation
+                this.bird.classList.remove('flap'); // Ensure it's removed before adding to re-trigger
+                void this.bird.offsetWidth; // Trigger reflow to restart animation
+                this.bird.classList.add('flap');
+                this.audio.playFlap();
+            }
+
+            spawnPipe() {
+                const gameContainerHeight = this.gameContainer.clientHeight;
+                const groundHeight = 80; // from CSS
+                const minPipeHeight = 50; // minimum height for a pipe
+                const maxPipeHeight = gameContainerHeight - groundHeight - this.pipeGap - minPipeHeight;
+                
+                const topPipeHeight = Math.random() * (maxPipeHeight - minPipeHeight) + minPipeHeight;
+                const bottomPipeHeight = gameContainerHeight - groundHeight - topPipeHeight - this.pipeGap;
+                
+                const topPipe = document.createElement('div');
+                topPipe.className = 'pipe pipe-top';
+                topPipe.style.height = topPipeHeight + 'px';
+                topPipe.style.right = '-70px'; // Initial position off-screen right
+                this.gameContainer.appendChild(topPipe);
+                
+                const bottomPipe = document.createElement('div');
+                bottomPipe.className = 'pipe pipe-bottom';
+                bottomPipe.style.height = bottomPipeHeight + 'px';
+                bottomPipe.style.right = '-70px'; // Initial position off-screen right
+                this.gameContainer.appendChild(bottomPipe);
+                
+                this.pipes.push({
+                    top: topPipe,
+                    bottom: bottomPipe,
+                    x: this.gameContainer.clientWidth, // Start pipes at the right edge
+                    passed: false
+                });
+            }
+
+            updatePipes() {
+                this.pipes.forEach((pipe, index) => {
+                    pipe.x -= this.gameSpeed;
+                    // Use 'left' for pipe movement to avoid issues with 'right' and width changes
+                    pipe.top.style.left = (this.gameContainer.clientWidth - pipe.x - 60) + 'px'; // 60 is pipe width
+                    pipe.bottom.style.left = (this.gameContainer.clientWidth - pipe.x - 60) + 'px';
+                    
+                    // Check if bird passed pipe
+                    if (!pipe.passed && pipe.x < (80 + 34 / 2)) { // 80 is bird's left, 34 is bird's width, check center
+                        pipe.passed = true;
+                        this.score++;
+                        this.scoreEl.textContent = this.score;
+                        this.audio.playScore();
+                    }
+                    
+                    // Remove pipes that are off screen
+                    if (pipe.x < -70) { // If pipe has moved completely off left
+                        pipe.top.remove();
+                        pipe.bottom.remove();
+                        this.pipes.splice(index, 1);
+                    }
+                });
+            }
+
+            checkCollisions() {
+                const birdRect = this.bird.getBoundingClientRect();
+                const gameContainerRect = this.gameContainer.getBoundingClientRect();
+                const groundHeight = 80; // from CSS
+
+                // Adjust birdRect to be relative to the game container
+                const birdRelativeRect = {
+                    left: birdRect.left - gameContainerRect.left,
+                    right: birdRect.right - gameContainerRect.left,
+                    top: birdRect.top - gameContainerRect.top,
+                    bottom: birdRect.bottom - gameContainerRect.top
+                };
+                
+                // Check ground collision
+                if (birdRelativeRect.bottom >= (gameContainerRect.height - groundHeight)) {
+                    this.birdY = gameContainerRect.height - groundHeight - this.bird.clientHeight; // Snap bird to ground
+                    this.bird.style.top = this.birdY + 'px';
+                    this.gameOver();
+                    return;
+                }
+                
+                // Check ceiling collision
+                if (birdRelativeRect.top <= 0) {
+                    this.birdY = 0; // Snap bird to ceiling
+                    this.bird.style.top = this.birdY + 'px';
+                    this.gameOver();
+                    return;
+                }
+                
+                // Check pipe collisions
+                for (let i = 0; i < this.pipes.length; i++) {
+                    const pipe = this.pipes[i];
+                    const pipeRectTop = pipe.top.getBoundingClientRect();
+                    const pipeRectBottom = pipe.bottom.getBoundingClientRect();
+
+                    // Adjust pipeRects to be relative to game container
+                    const pipeRelativeRectTop = {
+                        left: pipeRectTop.left - gameContainerRect.left,
+                        right: pipeRectTop.right - gameContainerRect.left,
+                        top: pipeRectTop.top - gameContainerRect.top,
+                        bottom: pipeRectTop.bottom - gameContainerRect.top
+                    };
+
+                    const pipeRelativeRectBottom = {
+                        left: pipeRectBottom.left - gameContainerRect.left,
+                        right: pipeRectBottom.right - gameContainerRect.left,
+                        top: pipeRectBottom.top - gameContainerRect.top,
+                        bottom: pipeRectBottom.bottom - gameContainerRect.top
+                    };
+                    
+                    if (birdRelativeRect.right > pipeRelativeRectTop.left && birdRelativeRect.left < pipeRelativeRectTop.right) {
+                        if (birdRelativeRect.top < pipeRelativeRectTop.bottom || birdRelativeRect.bottom > pipeRelativeRectBottom.top) {
+                            this.gameOver();
+                            return;
+                        }
+                    }
+                }
+            }
+
+            updateBird() {
+                this.birdVelocity += this.gravity;
+                this.birdY += this.birdVelocity;
+                
+                // Apply max fall speed
+                const maxFallSpeed = 10; // Prevent bird from falling too fast
+                if (this.birdVelocity > maxFallSpeed) {
+                    this.birdVelocity = maxFallSpeed;
+                }
+
+                // Rotate bird based on velocity, smoother rotation
+                const rotation = Math.min(Math.max(this.birdVelocity * 5, -45), 90); // Increased multiplier for more responsive tilt
+                this.bird.style.transform = `rotate(${rotation}deg)`;
+                this.bird.style.top = this.birdY + 'px';
+            }
+
+            gameLoop() {
+                if (this.isPlaying) {
+                    this.updateBird();
+                    this.updatePipes();
+                    this.checkCollisions();
+                    
+                    this.pipeSpawnTimer++;
+                    if (this.pipeSpawnTimer >= this.pipeSpawnInterval) {
+                        this.spawnPipe();
+                        this.pipeSpawnTimer = 0;
+                    }
+                }
+                this.animationFrameId = requestAnimationFrame(() => this.gameLoop());
+            }
+
+            startGame() {
+                this.isPlaying = true;
+                this.startScreenEl.style.display = 'none';
+                this.gameOverEl.style.display = 'none';
+                this.instructionsEl.style.display = 'none';
+                this.score = 0;
+                this.scoreEl.textContent = '0';
+                this.birdY = 300;
+                this.birdVelocity = 0;
+                this.bird.style.top = this.birdY + 'px';
+                this.bird.style.transform = 'rotate(0deg)';
+
+                // Clear any existing pipes before starting a new game
+                this.pipes.forEach(pipe => {
+                    pipe.top.remove();
+                    pipe.bottom.remove();
+                });
+                this.pipes = [];
+                this.pipeSpawnTimer = 0; // Reset pipe spawn timer
+                
+                // Start the game loop if not already running
+                if (!this.animationFrameId) {
+                    this.gameLoop();
+                }
+            }
+
+            gameOver() {
+                if (!this.isPlaying) return; // Prevent multiple game over calls
+                this.isPlaying = false;
+                cancelAnimationFrame(this.animationFrameId); // Stop the game loop
+                this.animationFrameId = null; // Reset the ID
+                
+                this.audio.playHit();
+                
+                // Give a slight delay before playing die sound to simulate a two-part crash
+                setTimeout(() => {
+                    this.audio.playDie();
+                }, 100); 
+                
+                // Clear all pipes visually and from array
+                this.pipes.forEach(pipe => {
+                    pipe.top.remove();
+                    pipe.bottom.remove();
+                });
+                this.pipes = [];
+                
+                // Update scores and medal
+                this.finalScoreEl.textContent = this.score;
+                const currentHighScore = this.getHighScore();
+                
+                if (this.score > currentHighScore) {
+                    this.saveHighScore(this.score);
+                    this.highScoreEl.textContent = this.score;
+                } else {
+                    this.highScoreEl.textContent = currentHighScore;
+                }
+                
+                // Show medal based on score
+                let medal = '';
+                if (this.score >= 40) medal = '🥇 Huyền thoại!';
+                else if (this.score >= 30) medal = '🥈 Bậc thầy!';
+                else if (this.score >= 20) medal = '🥉 Chuyên gia!';
+                else if (this.score >= 10) medal = '🏅 Giỏi lắm!';
+                else medal = '💪 Cố lên!';
+                
+                this.medalEl.innerHTML = `<div class="medal">${medal}</div>`;
+                
+                this.gameOverEl.style.display = 'block';
+            }
+
+            restartGame() {
+                this.score = 0;
+                this.scoreEl.textContent = '0';
+                this.pipeSpawnTimer = 0;
+                this.gameOverEl.style.display = 'none';
+                this.startGame();
+            }
+
+            loadHighScore() {
+                const highScore = this.getHighScore();
+                this.highScoreEl.textContent = highScore;
+            }
+
+            getHighScore() {
+                return parseInt(localStorage.getItem('flappyBirdHighScore') || '0');
+            }
+
+            saveHighScore(score) {
+                localStorage.setItem('flappyBirdHighScore', score.toString());
+            }
+
+            showStartScreen() {
+                this.startScreenEl.style.display = 'block';
+                this.instructionsEl.style.display = 'block'; // Show instructions on start screen
+            }
+        }
+
+        // Initialize game
+        const game = new FlappyBird();
+
+        // Global functions for buttons (kept for onclick attributes)
+        function startGame() {
+            game.startGame();
+        }
+
+        function restartGame() {
+            game.restartGame();
+        }
+    </script>
+</body>
+</html>
